@@ -659,19 +659,20 @@ function formatDate(dateString) {
 // ============ INITIALIZATION ============
 
 function checkAuth() {
-    // Auto-login as guest user - no authentication required
-    currentUser = 'Guest User';
-    localStorage.setItem(STORAGE_CURRENT_USER, currentUser);
-    
-    // Check for backend availability (optional)
-    checkBackendAvailable().then(() => {
-        // Load dashboard immediately
+    // Restore token and user if available
+    authToken = localStorage.getItem('authToken');
+    currentUser = localStorage.getItem('currentUser');
+
+    if (authToken && currentUser) {
+        useBackend = true; // Assume backend mode if token exists
         showView('dashboardView');
-    }).catch(() => {
-        // Still show dashboard even if backend check fails
-        showView('dashboardView');
-    });
+    } else {
+        // Default to guest or login view
+        currentUser = 'Guest User';
+        showView('loginView');
+    }
 }
+
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
