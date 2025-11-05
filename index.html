@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Loanz - Intelligent Loan Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login/Signup View (hidden by default) -->
+    <div id="loginView" class="view">
+        <header>
+            <h1>Better Loanz</h1>
+        </header>
+        
+        <div class="login-container">
+            <h2>Login</h2>
+            <div class="login-box">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button class="submit-button" onclick="handleLogin()">Submit</button>
+                <a href="#" onclick="showForgotPassword(); return false;" class="forgot-password-link">Forgot Password</a>
+                <a href="#" onclick="showSignup(); return false;" class="signup-link">Signup</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Signup View (hidden initially) -->
+    <div id="signupView" class="view">
+        <header>
+            <h1>Better Loanz</h1>
+        </header>
+        
+        <div class="login-container">
+            <h2>Signup</h2>
+            <div class="login-box">
+                <input type="text" id="signup-username" placeholder="Username" required>
+                <input type="password" id="signup-password" placeholder="Password" required>
+                <input type="password" id="signup-confirm" placeholder="Confirm Password" required>
+                <button class="submit-button" onclick="handleSignup()">Submit</button>
+                <a href="#" onclick="showLogin(); return false;" class="signup-link">Back to Login</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboardView" class="view active">
+        <header>
+            <h1>Better Loanz</h1>
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="showView('dashboardView')">Dashboard</button>
+                <button class="nav-button" onclick="showView('repaymentView')">Repayment Chart</button>
+                <button class="nav-button" onclick="showView('advisorView')">AI Advisor</button>
+                <button class="logout-button" onclick="location.reload()">Refresh</button>
+            </div>
+        </header>
+        
+        <div class="dashboard-content">
+            <div class="greeting">
+                <h2>Welcome, <span id="userName">User</span></h2>
+            </div>
+
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-label">Total Debt</div>
+                    <div class="metric-value" id="totalDebt">$125,000</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Average Interest</div>
+                    <div class="metric-value" id="avgInterest">5.2%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Monthly Payment</div>
+                    <div class="metric-value" id="monthlyPayment">$2,450</div>
+                </div>
+            </div>
+
+            <div class="loan-list-section">
+                <h3>Loan List</h3>
+                <div class="loan-list" id="loanList">
+                    <!-- Loans will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repayment Chart View -->
+    <div id="repaymentView" class="view">
+        <header>
+            <h1>Better Loanz</h1>
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="showView('dashboardView')">Dashboard</button>
+                <button class="nav-button" onclick="showView('repaymentView')">Repayment Chart</button>
+                <button class="nav-button" onclick="showView('advisorView')">AI Advisor</button>
+                <button class="logout-button" onclick="location.reload()">Refresh</button>
+            </div>
+        </header>
+        
+        <div class="repayment-content">
+            <div class="greeting">
+                <h2>Welcome, <span id="repaymentUserName">User</span></h2>
+            </div>
+
+            <h3>Repayment Chart</h3>
+
+            <div class="chart-layout">
+                <div class="chart-info">
+                    <div class="info-group">
+                        <label>Principal</label>
+                        <input type="number" id="principal" value="125000" placeholder="Principal">
+                    </div>
+                    <div class="info-group mesmerizing">
+                        <label>APR</label>
+                        <input type="number" id="apr" value="5.2" step="0.1" placeholder="APR">
+                    </div>
+                    <div class="info-group">
+                        <label>Interest</label>
+                        <input type="number" id="interest" value="0" readonly>
+                    </div>
+                    <div class="info-group">
+                        <label>Payment</label>
+                        <input type="number" id="payment" value="2450" placeholder="Payment">
+                    </div>
+                    <div class="info-group">
+                        <label>Extra Payments</label>
+                        <input type="number" id="extraPayments" value="0" placeholder="Extra Payments">
+                    </div>
+                    <button class="refresh-button" onclick="updateChart()">Refresh</button>
+                </div>
+
+                <div class="chart-container-large">
+                    <canvas id="repaymentChart"></canvas>
+                    <table class="chart-table" id="chartTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Principal</th>
+                                <th>Interest</th>
+                                <th>Payment</th>
+                                <th>Extra Payment</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chartTableBody">
+                            <!-- Chart data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Advisor View -->
+    <div id="advisorView" class="view">
+        <header>
+            <h1>Better Loanz</h1>
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="showView('dashboardView')">Dashboard</button>
+                <button class="nav-button" onclick="showView('repaymentView')">Repayment Chart</button>
+                <button class="nav-button" onclick="showView('advisorView')">AI Advisor</button>
+                <button class="logout-button" onclick="location.reload()">Refresh</button>
+            </div>
+        </header>
+        
+        <div class="advisor-content">
+            <div class="greeting">
+                <h2>Welcome, <span id="advisorUserName">User</span></h2>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message bot">
+                        <p>Hello! I'm your AI Loan Advisor. How can I help you today?</p>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="handleChatKeyPress(event)">
+                    <button class="send-button" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
