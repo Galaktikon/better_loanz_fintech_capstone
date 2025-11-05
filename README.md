@@ -187,7 +187,7 @@ The Flask server runs in debug mode by default when you run `python app.py`. Thi
 
 ## Security Notes
 
-⚠️ **Important**: This is a development/demo application. For production use:
+**Important**: This is a development/demo application. For production use:
 
 - Implement proper password hashing (e.g., bcrypt)
 - Use a real database instead of in-memory storage
@@ -228,4 +228,5 @@ This project is provided as-is for educational and demonstration purposes.
 ## Support
 
 For issues or questions, please check the troubleshooting section or review the code comments for implementation details.
+
 
