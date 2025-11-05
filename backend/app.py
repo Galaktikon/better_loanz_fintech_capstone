@@ -447,5 +447,5 @@ if __name__ == '__main__':
     print(f"OpenAI Integration: {'Enabled' if OPENAI_API_KEY else 'Disabled (set OPENAI_API_KEY to enable)'}")
     print(f"Plaid Integration: {'Enabled' if PLAID_CLIENT_ID and PLAID_SECRET else 'Disabled (set PLAID_CLIENT_ID and PLAID_SECRET to enable)'}")
     print("=" * 60)
-    app.run(debug=True, host="0.0.0.0" port=10000)
+    app.run(debug=True, host="0.0.0.0", port=10000)
 
