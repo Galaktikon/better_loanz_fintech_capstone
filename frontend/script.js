@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://better-loanz-fintech-capstone.onrender.com/api';
+const API_BASE_URL = 'https://better-loanz-fintech-capstone.onrender.com';
 let useBackend = false; // Will be set based on API availability
 let authToken = null;
 let currentUser = null;
