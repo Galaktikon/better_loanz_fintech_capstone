@@ -426,13 +426,17 @@ def generate_rule_based_response(user_message, loans):
 
 # ============ STATIC FILE SERVING ============
 
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
+#@app.route('/')
+#def index():
+#    return send_from_directory('.', 'index.html')
 
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory('.', path)
+
+@app.route("/api/hello")
+def hello():
+    return jsonify(message="Hello from python backend")
 
 # ============ RUN SERVER ============
 
@@ -443,5 +447,5 @@ if __name__ == '__main__':
     print(f"OpenAI Integration: {'Enabled' if OPENAI_API_KEY else 'Disabled (set OPENAI_API_KEY to enable)'}")
     print(f"Plaid Integration: {'Enabled' if PLAID_CLIENT_ID and PLAID_SECRET else 'Disabled (set PLAID_CLIENT_ID and PLAID_SECRET to enable)'}")
     print("=" * 60)
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host="0.0.0.0" port=10000)
 
