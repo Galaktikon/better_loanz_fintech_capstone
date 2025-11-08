@@ -200,7 +200,7 @@ def get_nested_value(obj, *keys, default=0):
     return float(obj or default)
 
 # ===== Helper: Parse Plaid Liabilities safely with logging =====
-def parse_plaid_loans_safe(data):
+def parse_plaid_loans(data):
     from datetime import date
 
     def safe_get(d, *keys, default=None):
