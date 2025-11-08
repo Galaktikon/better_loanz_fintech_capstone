@@ -144,7 +144,7 @@ def create_link_token():
         request_body = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=username),
             client_name="Better Loanz",
-            products=[Products.LIABILITIES],       # or the correct enum value
+            products=[Products('liabilities')],  # correct way
             country_codes=[CountryCode.US],
             language="en"
         )
