@@ -51,9 +51,11 @@ async function checkBackendAvailable() {
             body: JSON.stringify({ username: 'test', password: 'test' })
         });
         useBackend = true;
+        console.log("Using backend");
         return true;
     } catch (error) {
         useBackend = false;
+        console.log(error);
         return false;
     }
 }
