@@ -234,6 +234,7 @@ async function handleLogin() {
             
             authToken = response.token;
             currentUser = response.username;
+            console.log(authToken);
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', currentUser);
             
