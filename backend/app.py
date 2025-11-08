@@ -172,8 +172,8 @@ def exchange_public_token():
 @app.route('/api/plaid/get_liabilities', methods=['GET'])
 def get_liabilities():
     username, error_response, status_code = require_auth()
-    if error_response:
-        return error_response, status_code
+    #if error_response:
+    #    return error_response, status_code
 
     access_token = plaid_access_tokens.get(username)
     if not access_token:
