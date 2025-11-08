@@ -145,7 +145,7 @@ def create_link_token():
             user=LinkTokenCreateRequestUser(client_user_id=username),
             client_name="Better Loanz",
             products=[Products('liabilities')],  # correct way
-            country_codes=[CountryCode.US],
+            country_codes=[CountryCode('US')],
             language="en"
         )
         response = plaid_client.link_token_create(request_body)
