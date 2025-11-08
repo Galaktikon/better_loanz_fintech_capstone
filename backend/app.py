@@ -130,9 +130,16 @@ def require_auth():
 # ===== PLAID INTEGRATION =====
 @app.route('/api/plaid/create_link_token', methods=['POST'])
 def create_link_token():
+    # ========== DEMO MODE (commented auth check for demo) ==========
     username, error_response, status_code = require_auth()
-    if error_response:
-        return error_response, status_code
+    # Uncomment below line to enforce auth
+    # if error_response:
+    #     return error_response, status_code
+
+    # If no user is logged in, use a default demo user ID
+    if not username:
+        username = "demo_user"
+
     try:
         request_body = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=username),
