@@ -189,23 +189,33 @@ def get_liabilities():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ===== Helper: Parse Plaid Liabilities =====
+# ===== Helper: safely get nested values =====
+def get_nested_value(obj, *keys, default=0):
+    """Safely get nested values, even if intermediate keys are floats or missing."""
+    for key in keys:
+        if isinstance(obj, dict):
+            obj = obj.get(key, default)
+        else:
+            return float(obj or default)
+    return float(obj or default)
+
+# ===== Helper: Parse Plaid Liabilities safely =====
 def parse_plaid_loans(data):
     loans = []
     liabilities = data.get("liabilities", {})
     for category in ["student", "mortgage", "credit"]:
         for loan in liabilities.get(category, []):
             account_id = loan.get("account_id", "Unknown")
-            balance = loan.get("balance", {}).get("current", 0)
-            apr = loan.get("interest_rate_percentage", 0)
-            payment = loan.get("last_payment_amount", {}).get("amount", 0)
+            balance = get_nested_value(loan, "balance", "current")
+            apr = get_nested_value(loan, "interest_rate_percentage")
+            payment = get_nested_value(loan, "last_payment_amount", "amount")
             next_due = loan.get("next_payment_due_date", "N/A")
             loans.append({
                 "id": account_id,
                 "title": f"Loan {account_id}",
-                "balance": float(balance or 0),
-                "apr": float(apr or 0),
-                "payment": float(payment or 0),
+                "balance": balance,
+                "apr": apr,
+                "payment": payment,
                 "endDate": next_due,
                 "type": "PLAID"
             })
