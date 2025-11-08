@@ -1,28 +1,30 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
-from datetime import datetime, timedelta
-import json
-import math
+from datetime import datetime
+import secrets
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__, static_folder='.')
-CORS(app)  # Enable CORS for front-end communication
+CORS(app)  # Enable CORS for frontend communication
 
-# In-memory storage (in production, use a database)
+# ===== In-memory storage (replace with database in production) =====
 users_db = {}
 loans_db = {}
 sessions_db = {}
+plaid_access_tokens = {}
 
-# Configuration
-PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID', '')
-PLAID_SECRET = os.getenv('PLAID_SECRET', '')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+# ===== Configuration =====
+PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID", "")
+PLAID_SECRET = os.getenv("PLAID_SECRET", "")
+PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")  # sandbox | development | production
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+PLAID_REDIRECT_URI = os.getenv("PLAID_REDIRECT_URI")
 
-# Initialize OpenAI client (will be None if no key provided)
+# ===== Initialize OpenAI client =====
 openai_client = None
 try:
     import openai
@@ -31,31 +33,33 @@ try:
 except ImportError:
     pass
 
-
-# ===== PLAID INTEGRATION START =====
-# Install plaid: pip install plaid-python
+# ===== Initialize Plaid client (v9+) =====
 from plaid.api import plaid_api
-from plaid.model import *
-from plaid import Configuration, ApiClient, PlaidEnvironments
+from plaid.model import (
+    LinkTokenCreateRequest,
+    LinkTokenCreateRequestUser,
+    ItemPublicTokenExchangeRequest,
+    LiabilitiesGetRequest
+)
+from plaid.configuration import Configuration
+from plaid import ApiClient
 
-PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")  # sandbox | development | production
-PLAID_REDIRECT_URI = os.getenv("PLAID_REDIRECT_URI", None)
+# Map environment to URL manually (PlaidEnvironments removed in v9)
+PLAID_ENV_URLS = {
+    "sandbox": "https://sandbox.plaid.com",
+    "development": "https://development.plaid.com",
+    "production": "https://production.plaid.com",
+}
 
-# Configure Plaid client
 configuration = Configuration(
-    host=PlaidEnvironments[PLAID_ENV],
+    host=PLAID_ENV_URLS.get(PLAID_ENV, "https://sandbox.plaid.com"),
     api_key={
         "clientId": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
-    }
+    },
 )
 api_client = ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
-
-# Temporary access token storage (replace with DB in production)
-plaid_access_tokens = {}
-# ===== PLAID INTEGRATION END =====
-
 
 # ============ AUTHENTICATION ENDPOINTS ============
 @app.route('/api/auth/signup', methods=['POST'])
@@ -63,20 +67,20 @@ def signup():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    
+
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
-    
+
     if username in users_db:
         return jsonify({'error': 'Username already exists'}), 400
-    
+
     users_db[username] = {
         'username': username,
         'password': password,
         'created_at': datetime.now().isoformat()
     }
     loans_db[username] = []
-    
+
     return jsonify({'message': 'Account created successfully', 'username': username}), 201
 
 
@@ -85,18 +89,20 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    
+
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
-    
+
     user = users_db.get(username)
     if not user or user['password'] != password:
         return jsonify({'error': 'Invalid credentials'}), 401
-    
-    import secrets
+
     session_token = secrets.token_urlsafe(32)
-    sessions_db[session_token] = {'username': username, 'created_at': datetime.now().isoformat()}
-    
+    sessions_db[session_token] = {
+        'username': username,
+        'created_at': datetime.now().isoformat()
+    }
+
     return jsonify({'message': 'Login successful', 'token': session_token, 'username': username}), 200
 
 
@@ -108,7 +114,7 @@ def logout():
     return jsonify({'message': 'Logged out successfully'}), 200
 
 
-# ============ HELPER FUNCTIONS ============
+# ============ AUTH HELPERS ============
 def get_user_from_token():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     session = sessions_db.get(token)
@@ -123,12 +129,13 @@ def require_auth():
     return username, None, None
 
 
-# ===== PLAID INTEGRATION START =====
+# ===== PLAID INTEGRATION =====
 @app.route('/api/plaid/create_link_token', methods=['POST'])
 def create_link_token():
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
+
     try:
         request_body = LinkTokenCreateRequest(
             products=["liabilities"],
@@ -148,10 +155,12 @@ def exchange_public_token():
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
+
     data = request.get_json()
     public_token = data.get("public_token")
     if not public_token:
         return jsonify({"error": "Missing public_token"}), 400
+
     try:
         exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
         exchange_response = plaid_client.item_public_token_exchange(exchange_request)
@@ -167,9 +176,11 @@ def get_liabilities():
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
+
     access_token = plaid_access_tokens.get(username)
     if not access_token:
         return jsonify({"error": "No Plaid access token found"}), 400
+
     try:
         liabilities_request = LiabilitiesGetRequest(access_token=access_token)
         response = plaid_client.liabilities_get(liabilities_request)
@@ -181,30 +192,28 @@ def get_liabilities():
         return jsonify({"error": str(e)}), 500
 
 
+# ===== Helper: Parse Plaid Liabilities =====
 def parse_plaid_loans(data):
     """Convert Plaid liabilities data into Better Loanz format"""
     loans = []
     liabilities = data.get("liabilities", {})
-    student = liabilities.get("student", [])
-    mortgage = liabilities.get("mortgage", [])
-    credit = liabilities.get("credit", [])
-    for loan in student + mortgage + credit:
-        account_id = loan.get("account_id", "Unknown")
-        balance = loan.get("balance", {}).get("current", 0)
-        apr = loan.get("interest_rate_percentage", 0)
-        payment = loan.get("last_payment_amount", {}).get("amount", 0)
-        next_due = loan.get("next_payment_due_date", "N/A")
-        loans.append({
-            "id": account_id,
-            "title": f"Loan {account_id}",
-            "balance": float(balance or 0),
-            "apr": float(apr or 0),
-            "payment": float(payment or 0),
-            "endDate": next_due,
-            "type": "PLAID"
-        })
+    for category in ["student", "mortgage", "credit"]:
+        for loan in liabilities.get(category, []):
+            account_id = loan.get("account_id", "Unknown")
+            balance = loan.get("balance", {}).get("current", 0)
+            apr = loan.get("interest_rate_percentage", 0)
+            payment = loan.get("last_payment_amount", {}).get("amount", 0)
+            next_due = loan.get("next_payment_due_date", "N/A")
+            loans.append({
+                "id": account_id,
+                "title": f"Loan {account_id}",
+                "balance": float(balance or 0),
+                "apr": float(apr or 0),
+                "payment": float(payment or 0),
+                "endDate": next_due,
+                "type": "PLAID"
+            })
     return loans
-# ===== PLAID INTEGRATION END =====
 
 
 # ============ LOAN ENDPOINTS ============
@@ -214,9 +223,11 @@ def sync_plaid_loans():
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
+
     access_token = plaid_access_tokens.get(username)
     if not access_token:
         return jsonify({'error': 'No Plaid access token found for user'}), 400
+
     try:
         liabilities_request = LiabilitiesGetRequest(access_token=access_token)
         response = plaid_client.liabilities_get(liabilities_request)
@@ -228,21 +239,22 @@ def sync_plaid_loans():
         return jsonify({'error': str(e)}), 500
 
 
-# (The rest of your endpoints — metrics, advisor, repayment — remain unchanged)
+# ====== BASIC ENDPOINTS ======
+@app.route("/api/hello")
+def hello():
+    return jsonify(message="Hello from Python backend")
 
-@app.route('/<path:path>')
+
+@app.route("/<path:path>")
 def serve_static(path):
     return send_from_directory('.', path)
 
-@app.route("/api/hello")
-def hello():
-    return jsonify(message="Hello from python backend")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("=" * 60)
     print("Better Loanz API Server")
     print("=" * 60)
     print(f"OpenAI Integration: {'Enabled' if OPENAI_API_KEY else 'Disabled'}")
     print(f"Plaid Integration: {'Enabled' if PLAID_CLIENT_ID and PLAID_SECRET else 'Disabled'}")
     print("=" * 60)
-    app.run(debug=True, host="0.0.0.0", port=10000)
+    app.run(debug=True, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
