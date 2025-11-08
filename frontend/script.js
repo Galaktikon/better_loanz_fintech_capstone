@@ -673,6 +673,79 @@ function checkAuth() {
     }
 }
 
+// ===== PLAID INTEGRATION START =====
+async function initPlaidLink() {
+    try {
+        const tokenRes = await fetch(`${API_BASE_URL}/plaid/create_link_token`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await tokenRes.json();
+
+        const handler = Plaid.create({
+            token: data.link_token,
+            onSuccess: async (public_token, metadata) => {
+                await fetch(`${API_BASE_URL}/plaid/exchange_public_token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ public_token })
+                });
+                const liabRes = await fetch(`${API_BASE_URL}/plaid/get_liabilities`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const liabData = await liabRes.json();
+                displayPlaidLoans(liabData);
+            },
+            onExit: (err, metadata) => {
+                if (err) console.error('Plaid exited with error:', err);
+            }
+        });
+        handler.open();
+    } catch (error) {
+        console.error('Error initializing Plaid Link:', error);
+    }
+}
+
+function displayPlaidLoans(data) {
+    const loanList = document.getElementById('loanList');
+    loanList.innerHTML = '';
+    const liabilities = data.liabilities;
+    if (!liabilities) {
+        loanList.innerHTML = '<p>No liabilities found.</p>';
+        return;
+    }
+    const allLoans = [
+        ...(liabilities.student || []),
+        ...(liabilities.mortgage || []),
+        ...(liabilities.credit || [])
+    ];
+    if (allLoans.length === 0) {
+        loanList.innerHTML = '<p>No loans found.</p>';
+        return;
+    }
+    allLoans.forEach((loan, index) => {
+        const div = document.createElement('div');
+        div.className = 'loan-item';
+        div.innerHTML = `
+            <div class="loan-field loan-title">${loan.account_id || 'Loan ' + (index + 1)}</div>
+            <div class="loan-field loan-value">$${loan.balance?.current?.toLocaleString() || 'N/A'}</div>
+            <div class="loan-field loan-value">${loan.interest_rate_percentage || 'N/A'}%</div>
+            <div class="loan-field loan-value">${loan.next_payment_due_date || 'N/A'}</div>
+        `;
+        loanList.appendChild(div);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const linkBtn = document.getElementById('linkButton');
+    if (linkBtn) linkBtn.addEventListener('click', initPlaidLink);
+});
+// ===== PLAID INTEGRATION END =====
+
+
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
