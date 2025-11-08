@@ -676,36 +676,87 @@ function checkAuth() {
 // ===== PLAID INTEGRATION START =====
 async function initPlaidLink() {
     try {
+        // Use the correct auth token key
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            alert('Please log in first.');
+            return;
+        }
+
+        // Create a Plaid link token from backend
         const tokenRes = await fetch(`${API_BASE_URL}/plaid/create_link_token`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            }
         });
-        const data = await tokenRes.json();
 
+        if (!tokenRes.ok) {
+            const errText = await tokenRes.text();
+            console.error('Plaid link token error:', errText);
+            throw new Error(`Plaid create_link_token failed (${tokenRes.status})`);
+        }
+
+        const data = await tokenRes.json();
+        if (!data.link_token) {
+            throw new Error('No link_token returned from Plaid backend');
+        }
+
+        // Initialize Plaid Link with the token
         const handler = Plaid.create({
             token: data.link_token,
             onSuccess: async (public_token, metadata) => {
-                await fetch(`${API_BASE_URL}/plaid/exchange_public_token`, {
+                console.log('Plaid link success:', metadata.institution);
+
+                // Exchange the public token for an access token
+                const exchangeRes = await fetch(`${API_BASE_URL}/plaid/exchange_public_token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: JSON.stringify({ public_token })
                 });
+
+                if (!exchangeRes.ok) {
+                    const errText = await exchangeRes.text();
+                    console.error('Plaid exchange error:', errText);
+                    alert('Error exchanging Plaid public token.');
+                    return;
+                }
+
+                // Fetch liabilities data
                 const liabRes = await fetch(`${API_BASE_URL}/plaid/get_liabilities`, {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
                 });
+
+                if (!liabRes.ok) {
+                    const errText = await liabRes.text();
+                    console.error('Plaid liabilities error:', errText);
+                    alert('Error fetching liabilities.');
+                    return;
+                }
+
                 const liabData = await liabRes.json();
                 displayPlaidLoans(liabData);
             },
             onExit: (err, metadata) => {
-                if (err) console.error('Plaid exited with error:', err);
+                if (err) {
+                    console.error('Plaid exited with error:', err);
+                } else {
+                    console.log('Plaid exited:', metadata.status);
+                }
             }
         });
+
         handler.open();
     } catch (error) {
         console.error('Error initializing Plaid Link:', error);
+        alert('Unable to initialize Plaid Link. Please check your backend connection.');
     }
 }
 
@@ -717,15 +768,18 @@ function displayPlaidLoans(data) {
         loanList.innerHTML = '<p>No liabilities found.</p>';
         return;
     }
+
     const allLoans = [
         ...(liabilities.student || []),
         ...(liabilities.mortgage || []),
         ...(liabilities.credit || [])
     ];
+
     if (allLoans.length === 0) {
         loanList.innerHTML = '<p>No loans found.</p>';
         return;
     }
+
     allLoans.forEach((loan, index) => {
         const div = document.createElement('div');
         div.className = 'loan-item';
@@ -739,11 +793,13 @@ function displayPlaidLoans(data) {
     });
 }
 
+// Attach Plaid button event listener
 document.addEventListener('DOMContentLoaded', () => {
     const linkBtn = document.getElementById('linkButton');
     if (linkBtn) linkBtn.addEventListener('click', initPlaidLink);
 });
 // ===== PLAID INTEGRATION END =====
+
 
 
 
