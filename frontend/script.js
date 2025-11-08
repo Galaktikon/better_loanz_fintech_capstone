@@ -250,6 +250,7 @@ async function handleLogin() {
     // Standalone mode
     const users = getLocalUsers();
     if (users[username] && users[username].password === password) {
+        authToken = "demo-token";
     currentUser = username;
         localStorage.setItem(STORAGE_CURRENT_USER, username);
     showView('dashboardView');
@@ -680,7 +681,7 @@ function checkAuth() {
 async function initPlaidLink() {
     try {
         // Use the correct auth token key
-        const authToken = localStorage.getItem('authToken');
+        //const authToken = localStorage.getItem('authToken');
         if (!authToken) {
             alert('Please log in first.');
             return;
