@@ -157,8 +157,8 @@ def create_link_token():
 @app.route('/api/plaid/exchange_public_token', methods=['POST'])
 def exchange_public_token():
     username, error_response, status_code = require_auth()
-    if error_response:
-        return error_response, status_code
+    #if error_response:
+    #    return error_response, status_code
 
     data = request.get_json()
     public_token = data.get("public_token")
