@@ -200,7 +200,7 @@ def get_nested_value(obj, *keys, default=0):
     return float(obj or default)
 
 # ===== Helper: Parse Plaid Liabilities safely with logging =====
-def parse_plaid_loans(data):
+def parse_plaid_loans_safe(data):
     from datetime import date
 
     def safe_get(d, *keys, default=None):
@@ -227,7 +227,6 @@ def parse_plaid_loans(data):
             if category == "credit":
                 apr_list = loan.get("aprs", [])
                 if apr_list:
-                    # Pick purchase_apr if available, else first APR
                     apr_entry = next((a for a in apr_list if a.get("apr_type") == "purchase_apr"), apr_list[0])
                     apr = apr_entry.get("apr_percentage")
             elif category == "mortgage":
@@ -248,7 +247,7 @@ def parse_plaid_loans(data):
             # Loan name/title
             name = loan.get("loan_name") or loan.get("loan_type_description") or loan.get("name") or f"Loan {account_id}"
 
-            loans.append({
+            loan_info = {
                 "id": account_id,
                 "title": name,
                 "balance": balance,
@@ -257,9 +256,16 @@ def parse_plaid_loans(data):
                 "endDate": next_due,
                 "type": "PLAID",
                 "category": category
-            })
+            }
 
+            # Print the loan info being appended
+            print(f"Appending loan info: {loan_info}")
+
+            loans.append(loan_info)
+
+    print(f"Total loans parsed: {len(loans)}")
     return loans
+
 
 # ============ LOAN ENDPOINTS ============
 @app.route('/api/loans/sync', methods=['POST'])
