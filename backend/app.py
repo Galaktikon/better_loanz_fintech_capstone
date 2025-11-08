@@ -210,15 +210,29 @@ def parse_plaid_loans(data):
             apr = get_nested_value(loan, "interest_rate_percentage")
             payment = get_nested_value(loan, "last_payment_amount", "amount")
             next_due = loan.get("next_payment_due_date", "N/A")
+            # Attempt to get the account name if available
+            name = loan.get("name") or loan.get("account_id") or "Unknown"
+
+            print(f"--- Loan Detected ---")
+            print(f"Category: {category}")
+            print(f"Account ID: {account_id}")
+            print(f"Name: {name}")
+            print(f"Balance: {balance}")
+            print(f"APR: {apr}")
+            print(f"Next Payment Due: {next_due}")
+            print(f"Last Payment Amount: {payment}")
+            print("----------------------")
+
             loans.append({
                 "id": account_id,
-                "title": f"Loan {account_id}",
+                "title": name,
                 "balance": balance,
                 "apr": apr,
                 "payment": payment,
                 "endDate": next_due,
                 "type": "PLAID"
             })
+    print(f"Total loans parsed: {len(loans)}")
     return loans
 
 # ============ LOAN ENDPOINTS ============
