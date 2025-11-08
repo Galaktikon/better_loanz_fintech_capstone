@@ -5,7 +5,7 @@ from datetime import datetime
 import secrets
 from dotenv import load_dotenv
 
-# Load environment variables
+# ===== Load environment variables =====
 load_dotenv()
 
 app = Flask(__name__, static_folder='.')
@@ -41,6 +41,8 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.liabilities_get_request import LiabilitiesGetRequest
 
 # Map environment to URL manually (PlaidEnvironments removed in v9)
 PLAID_ENV_URLS = {
@@ -81,7 +83,6 @@ def signup():
 
     return jsonify({'message': 'Account created successfully', 'username': username}), 201
 
-
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -103,14 +104,12 @@ def login():
 
     return jsonify({'message': 'Login successful', 'token': session_token, 'username': username}), 200
 
-
 @app.route('/api/auth/logout', methods=['POST'])
 def logout():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     if token in sessions_db:
         del sessions_db[token]
     return jsonify({'message': 'Logged out successfully'}), 200
-
 
 # ============ AUTH HELPERS ============
 def get_user_from_token():
@@ -126,17 +125,14 @@ def require_auth():
         return None, jsonify({'error': 'Unauthorized'}), 401
     return username, None, None
 
-
 # ===== PLAID INTEGRATION =====
 @app.route('/api/plaid/create_link_token', methods=['POST'])
 def create_link_token():
-    # ========== DEMO MODE (commented auth check for demo) ==========
     username, error_response, status_code = require_auth()
-    # Uncomment below line to enforce auth
+    # Uncomment to enforce auth
     # if error_response:
     #     return error_response, status_code
 
-    # If no user is logged in, use a default demo user ID
     if not username:
         username = "demo_user"
 
@@ -144,7 +140,7 @@ def create_link_token():
         request_body = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=username),
             client_name="Better Loanz",
-            products=[Products('liabilities')],  # correct way
+            products=[Products('liabilities')],
             country_codes=[CountryCode('US')],
             language="en"
         )
@@ -153,12 +149,11 @@ def create_link_token():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/plaid/exchange_public_token', methods=['POST'])
 def exchange_public_token():
     username, error_response, status_code = require_auth()
-    #if error_response:
-    #    return error_response, status_code
+    # if error_response:
+    #     return error_response, status_code
 
     data = request.get_json()
     public_token = data.get("public_token")
@@ -173,7 +168,6 @@ def exchange_public_token():
         return jsonify({"message": "Plaid access token stored"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/plaid/get_liabilities', methods=['GET'])
 def get_liabilities():
@@ -195,10 +189,8 @@ def get_liabilities():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # ===== Helper: Parse Plaid Liabilities =====
 def parse_plaid_loans(data):
-    """Convert Plaid liabilities data into Better Loanz format"""
     loans = []
     liabilities = data.get("liabilities", {})
     for category in ["student", "mortgage", "credit"]:
@@ -219,11 +211,9 @@ def parse_plaid_loans(data):
             })
     return loans
 
-
 # ============ LOAN ENDPOINTS ============
 @app.route('/api/loans/sync', methods=['POST'])
 def sync_plaid_loans():
-    """Sync loans from Plaid Liabilities API"""
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
@@ -242,17 +232,14 @@ def sync_plaid_loans():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 # ====== BASIC ENDPOINTS ======
 @app.route("/api/hello")
 def hello():
     return jsonify(message="Hello from Python backend")
 
-
 @app.route("/<path:path>")
 def serve_static(path):
     return send_from_directory('.', path)
-
 
 if __name__ == "__main__":
     print("=" * 60)
