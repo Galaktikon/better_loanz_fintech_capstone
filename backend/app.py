@@ -201,23 +201,52 @@ def get_nested_value(obj, *keys, default=0):
 
 # ===== Helper: Parse Plaid Liabilities safely with logging =====
 def parse_plaid_loans(data):
+    from datetime import date
+
+    def safe_get(d, *keys, default=None):
+        """Safely get nested dictionary keys."""
+        for key in keys:
+            if isinstance(d, dict):
+                d = d.get(key, default)
+            else:
+                return default
+        return d
+
     loans = []
     liabilities = data.get("liabilities", {})
 
-    print("===== PLAID LIABILITIES RAW DATA =====")
-    print(data)  # Log the full Plaid response
-
     for category in ["student", "mortgage", "credit"]:
         for loan in liabilities.get(category, []):
-            # Log the entire loan object
-            print(f"--- Loan Object ---\n{loan}\n------------------")
-
             account_id = loan.get("account_id", "Unknown")
-            balance = get_nested_value(loan, "balance", "current")
-            apr = get_nested_value(loan, "interest_rate_percentage")
-            payment = get_nested_value(loan, "last_payment_amount", "amount")
-            next_due = loan.get("next_payment_due_date", "N/A")
-            name = loan.get("name") or f"Loan {account_id}"
+
+            # Balance extraction
+            balance = safe_get(loan, "balance", "current") or safe_get(loan, "current") or 0.0
+
+            # APR / interest rate extraction
+            apr = None
+            if category == "credit":
+                apr_list = loan.get("aprs", [])
+                if apr_list:
+                    # Pick purchase_apr if available, else first APR
+                    apr_entry = next((a for a in apr_list if a.get("apr_type") == "purchase_apr"), apr_list[0])
+                    apr = apr_entry.get("apr_percentage")
+            elif category == "mortgage":
+                apr = safe_get(loan, "interest_rate", "percentage")
+            elif category == "student":
+                apr = loan.get("interest_rate_percentage")
+
+            # Last payment extraction
+            payment = safe_get(loan, "last_payment_amount") or 0.0
+
+            # Next payment due
+            next_due = loan.get("next_payment_due_date")
+            if isinstance(next_due, date):
+                next_due = next_due.isoformat()
+            elif next_due is None:
+                next_due = "N/A"
+
+            # Loan name/title
+            name = loan.get("loan_name") or loan.get("loan_type_description") or loan.get("name") or f"Loan {account_id}"
 
             loans.append({
                 "id": account_id,
@@ -226,11 +255,11 @@ def parse_plaid_loans(data):
                 "apr": apr,
                 "payment": payment,
                 "endDate": next_due,
-                "type": "PLAID"
+                "type": "PLAID",
+                "category": category
             })
-    print(f"Total loans parsed: {len(loans)}")
-    return loans
 
+    return loans
 
 # ============ LOAN ENDPOINTS ============
 @app.route('/api/loans/sync', methods=['POST'])
