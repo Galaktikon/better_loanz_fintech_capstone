@@ -35,14 +35,12 @@ except ImportError:
 
 # ===== Initialize Plaid client (v9+) =====
 from plaid.api import plaid_api
-from plaid.model import (
-    LinkTokenCreateRequest,
-    LinkTokenCreateRequestUser,
-    ItemPublicTokenExchangeRequest,
-    LiabilitiesGetRequest
-)
 from plaid.configuration import Configuration
 from plaid import ApiClient
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.country_code import CountryCode
+from plaid.model.products import Products
 
 # Map environment to URL manually (PlaidEnvironments removed in v9)
 PLAID_ENV_URLS = {
@@ -135,14 +133,13 @@ def create_link_token():
     username, error_response, status_code = require_auth()
     if error_response:
         return error_response, status_code
-
     try:
         request_body = LinkTokenCreateRequest(
-            products=["liabilities"],
+            user=LinkTokenCreateRequestUser(client_user_id=username),
             client_name="Better Loanz",
-            country_codes=["US"],
-            language="en",
-            user=LinkTokenCreateRequestUser(client_user_id=username)
+            products=[Products.LIABILITIES],       # or the correct enum value
+            country_codes=[CountryCode.US],
+            language="en"
         )
         response = plaid_client.link_token_create(request_body)
         return jsonify(response.to_dict()), 200
