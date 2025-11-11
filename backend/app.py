@@ -186,7 +186,7 @@ def get_liabilities():
         liabilities_data = response.to_dict()
         loans = parse_plaid_loans(liabilities_data)
         loans_db[username] = loans
-        return jsonify(liabilities_data), 200
+        return jsonify({"loans": loans}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

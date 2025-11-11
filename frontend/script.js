@@ -730,7 +730,7 @@ async function initPlaidLink() {
                     return;
                 }
 
-                // Fetch liabilities data
+                // Fetch liabilities data (parsed loans)
                 const liabRes = await fetch(`${API_BASE_URL}/plaid/get_liabilities`, {
                     method: 'GET',
                     headers: {
@@ -746,8 +746,9 @@ async function initPlaidLink() {
                 }
 
                 const liabData = await liabRes.json();
-                console.log(liabData)
-                displayPlaidLoans(liabData);
+                console.log('Parsed loans received:', liabData);
+                displayPlaidLoans(liabData); 
+
             },
             onExit: (err, metadata) => {
                 if (err) {
@@ -768,31 +769,22 @@ async function initPlaidLink() {
 function displayPlaidLoans(data) {
     const loanList = document.getElementById('loanList');
     loanList.innerHTML = '';
-    const liabilities = data.liabilities;
-    if (!liabilities) {
-        loanList.innerHTML = '<p>No liabilities found.</p>';
-        return;
-    }
 
-    const allLoans = [
-        ...(liabilities.student || []),
-        ...(liabilities.mortgage || []),
-        ...(liabilities.credit || [])
-    ];
-
-    if (allLoans.length === 0) {
+    const loans = data.loans;
+    if (!loans || loans.length === 0) {
         loanList.innerHTML = '<p>No loans found.</p>';
         return;
     }
 
-    allLoans.forEach((loan, index) => {
+    loans.forEach((loan) => {
         const div = document.createElement('div');
         div.className = 'loan-item';
         div.innerHTML = `
-            <div class="loan-field loan-title">${loan.account_id || 'Loan ' + (index + 1)}</div>
-            <div class="loan-field loan-value">$${loan.balance?.current?.toLocaleString() || 'N/A'}</div>
-            <div class="loan-field loan-value">${loan.interest_rate_percentage || 'N/A'}%</div>
-            <div class="loan-field loan-value">${loan.next_payment_due_date || 'N/A'}</div>
+            <div class="loan-field loan-title">${loan.title || 'Unnamed Loan'}</div>
+            <div class="loan-field loan-value">${formatCurrency(loan.balance)}</div>
+            <div class="loan-field loan-value">${loan.apr ? loan.apr + '%' : 'N/A'}</div>
+            <div class="loan-field loan-value">${formatCurrency(loan.payment || 0)}</div>
+            <div class="loan-field">${loan.endDate ? formatDate(loan.endDate) : 'N/A'}</div>
         `;
         loanList.appendChild(div);
     });
