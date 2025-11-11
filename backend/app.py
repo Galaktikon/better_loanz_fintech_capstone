@@ -215,7 +215,7 @@ def parse_plaid_loans(data):
 
     loans = []
     liabilities = data.get("liabilities", {})
-    json.dumps(data, indent=2, sort_keys=True)
+    print(json.dumps(data, indent=2, sort_keys=True, default=str))
 
     for category in ["student", "mortgage", "credit"]:
         for loan in liabilities.get(category, []):
