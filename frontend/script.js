@@ -776,6 +776,10 @@ function displayPlaidLoans(data) {
         return;
     }
 
+    loans = parsedLoans;
+    saveLocalLoans(loans);
+    loadMetrics();
+
     loans.forEach((loan) => {
         const div = document.createElement('div');
         div.className = 'loan-item';
