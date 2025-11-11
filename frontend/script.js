@@ -791,6 +791,10 @@ function displayPlaidLoans(data) {
         `;
         loanList.appendChild(div);
     });
+
+    setTimeout(() => {
+        loadMetrics();
+    }, 50);
 }
 
 // Attach Plaid button event listener
