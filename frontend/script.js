@@ -88,6 +88,8 @@ function saveLocalLoans(loanList) {
     if (user) {
         localStorage.setItem(`${STORAGE_LOANS}_${user}`, JSON.stringify(loanList));
     }
+    loans = loanList;
+    
 }
 
 function getDefaultLoans() {
