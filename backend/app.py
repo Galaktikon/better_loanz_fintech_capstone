@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import secrets
 from dotenv import load_dotenv
+import json
 
 # ===== Load environment variables =====
 load_dotenv()
