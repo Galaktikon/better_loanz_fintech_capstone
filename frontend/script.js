@@ -776,7 +776,6 @@ function displayPlaidLoans(data) {
         return;
     }
 
-    loans = parsedLoans;
     saveLocalLoans(loans);
     loadMetrics();
 
