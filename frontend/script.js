@@ -746,6 +746,7 @@ async function initPlaidLink() {
                 }
 
                 const liabData = await liabRes.json();
+                console.log(liabData)
                 displayPlaidLoans(liabData);
             },
             onExit: (err, metadata) => {
