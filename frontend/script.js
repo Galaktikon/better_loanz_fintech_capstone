@@ -599,12 +599,12 @@ async function sendMessage() {
     let response = '';
     
     try {
-        console.log(localStorage.getItem("authToken"))
+        console.log(authToken)
 
         const apiResponse = await apiRequest('/advisor/chat', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem("authToken")}`
+                'Authorization': `Bearer ${authToken}`
             },
             body: JSON.stringify({
                 message,
