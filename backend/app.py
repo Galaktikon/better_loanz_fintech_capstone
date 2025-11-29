@@ -124,6 +124,7 @@ def get_user_from_token():
 
 def require_auth():
     username = get_user_from_token()
+    print(f"Authenticated user: {username}")
     if not username:
         return None, jsonify({'error': 'Unauthorized'}), 401
     return username, None, None
@@ -368,6 +369,7 @@ def advisor_chat():
 
     username, error_response, status_code = require_auth()
     if error_response:
+        print(f"Auth error: {error_response}")
         return error_response, status_code
 
     data = request.get_json()
