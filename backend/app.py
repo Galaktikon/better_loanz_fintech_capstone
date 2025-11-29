@@ -5,6 +5,8 @@ from datetime import datetime
 import secrets
 from dotenv import load_dotenv
 import json
+from openai import OpenAI
+
 
 # ===== Load environment variables =====
 load_dotenv()
@@ -28,9 +30,8 @@ PLAID_REDIRECT_URI = os.getenv("PLAID_REDIRECT_URI")
 # ===== Initialize OpenAI client =====
 openai_client = None
 try:
-    import openai
     if OPENAI_API_KEY:
-        openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
 except ImportError:
     pass
 
@@ -298,7 +299,42 @@ def parse_plaid_loans(data):
     print(f"Total loans parsed: {len(loans)}")
     return loans
 
+# ============= AI Helper ==============
+def build_user_context(username):
+    user_loans = loans_db.get(username, [])
 
+    if not user_loans:
+        return "The user currently has no loans connected."
+
+    total_debt = sum(l.get("balance", 0) for l in user_loans)
+    total_payment = sum(l.get("payment", 0) for l in user_loans)
+    avg_apr = (
+        sum(l.get("apr", 0) for l in user_loans) / len(user_loans)
+        if len(user_loans) > 0 else 0
+    )
+
+    # Build a user financial profile (system prompt context)
+    context = f"""
+        User Financial Summary:
+        -------------------------
+        Total Debt: ${total_debt:,.2f}
+        Total Monthly Payment: ${total_payment:,.2f}
+        Average APR: {avg_apr:.2f}%
+
+        Loan Details:
+        """
+
+            for loan in user_loans:
+                context += f"""
+        • {loan.get("title", "Loan")}
+            - Balance: ${loan.get("balance", 0):,.2f}
+            - APR: {loan.get("apr", 0)}%
+            - Payment: ${loan.get("payment", 0):,.2f}
+            - Due Date: {loan.get("endDate", "N/A")}
+        """
+
+    context += "\nUse this context to give specific, actionable financial guidance."
+    return context
 
 # ============ LOAN ENDPOINTS ============
 @app.route('/api/loans/sync', methods=['POST'])
@@ -320,6 +356,68 @@ def sync_plaid_loans():
         return jsonify({'message': 'Loans synced successfully', 'loans': loans}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ============ AI Endpoints ============
+@app.route('/api/advisor/chat', methods=['POST'])
+def advisor_chat():
+    if not OPENAI_API_KEY:
+        return jsonify({"error": "OpenAI API key missing on backend"}), 500
+
+    username, error_response, status_code = require_auth()
+    if error_response:
+        return error_response, status_code
+
+    data = request.get_json()
+    user_message = data.get("message", "")
+    history = data.get("history", [])
+
+    if not user_message:
+        return jsonify({"error": "Message required"}), 400
+
+    # ---- Build user financial context ----
+    user_context = build_user_context(username)
+
+    # ---- Compose messages for OpenAI ----
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are BetterLoanz AI, a financial advisor specializing in debt reduction, "
+                "APR optimization, refinancing guidance, and loan payoff strategies.\n\n"
+                "Always provide clear, actionable recommendations.\n"
+                "You must ALWAYS reference the user's actual loan data when applicable.\n"
+                "Here is the user's financial profile:\n\n"
+                f"{user_context}"
+            )
+        }
+    ]
+
+    # Add message history
+    for h in history:
+        messages.append({
+            "role": h.get("role", "user"),
+            "content": h.get("content", "")
+        })
+
+    # Add the new user input
+    messages.append({"role": "user", "content": user_message})
+
+    # ---- Call OpenAI ----
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        completion = client.chat.completions.create(
+            model="gpt-4.1",
+            messages=messages,
+            max_tokens=350,
+            temperature=0.6
+        )
+
+        ai_response = completion.choices[0].message["content"]
+        return jsonify({"response": ai_response}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ====== BASIC ENDPOINTS ======
 @app.route("/api/hello")
