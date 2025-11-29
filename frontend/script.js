@@ -599,8 +599,13 @@ async function sendMessage() {
     let response = '';
     
     try {
+        console.log(localStorage.getItem("authToken"))
+
         const apiResponse = await apiRequest('/advisor/chat', {
             method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem("authToken")}`
+            },
             body: JSON.stringify({
                 message,
                 history: chatHistory.slice(-10)
