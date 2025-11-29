@@ -118,8 +118,8 @@ def get_user_from_token():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     session = sessions_db.get(token)
     print(f"Auth token: {token}, Session: {session}")
-    if "demo_token" in token:
-        return "demo_user"
+    if "demo-token" in token:
+        return "demo-user"
     if not session:
         return None
     return session['username']
