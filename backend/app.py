@@ -313,28 +313,30 @@ def build_user_context(username):
         if len(user_loans) > 0 else 0
     )
 
-    # Build a user financial profile (system prompt context)
+    # Build a user financial profile
     context = f"""
-        User Financial Summary:
-        -------------------------
-        Total Debt: ${total_debt:,.2f}
-        Total Monthly Payment: ${total_payment:,.2f}
-        Average APR: {avg_apr:.2f}%
+User Financial Summary:
+-------------------------
+Total Debt: ${total_debt:,.2f}
+Total Monthly Payment: ${total_payment:,.2f}
+Average APR: {avg_apr:.2f}%
 
-        Loan Details:
-        """
+Loan Details:
+"""
 
-        for loan in user_loans:
-            context += f"""
-            • {loan.get("title", "Loan")}
-            - Balance: ${loan.get("balance", 0):,.2f}
-            - APR: {loan.get("apr", 0)}%
-            - Payment: ${loan.get("payment", 0):,.2f}
-            - Due Date: {loan.get("endDate", "N/A")}
-        """
+    # FIXED indentation below ↓↓↓
+    for loan in user_loans:
+        context += f"""
+• {loan.get("title", "Loan")}
+    - Balance: ${loan.get("balance", 0):,.2f}
+    - APR: {loan.get("apr", 0)}%
+    - Payment: ${loan.get("payment", 0):,.2f}
+    - Due Date: {loan.get("endDate", "N/A")}
+"""
 
     context += "\nUse this context to give specific, actionable financial guidance."
     return context
+
 
 # ============ LOAN ENDPOINTS ============
 @app.route('/api/loans/sync', methods=['POST'])
