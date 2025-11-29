@@ -324,9 +324,9 @@ def build_user_context(username):
         Loan Details:
         """
 
-            for loan in user_loans:
-                context += f"""
-        • {loan.get("title", "Loan")}
+        for loan in user_loans:
+            context += f"""
+            • {loan.get("title", "Loan")}
             - Balance: ${loan.get("balance", 0):,.2f}
             - APR: {loan.get("apr", 0)}%
             - Payment: ${loan.get("payment", 0):,.2f}
