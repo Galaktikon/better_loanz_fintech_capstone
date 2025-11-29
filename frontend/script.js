@@ -598,23 +598,18 @@ async function sendMessage() {
     
     let response = '';
     
-    if (useBackend) {
-        try {
-            const apiResponse = await apiRequest('/advisor/chat', {
-                method: 'POST',
-                body: JSON.stringify({
-                    message,
-                    history: chatHistory.slice(-10)
-                })
-            });
-            response = apiResponse.response;
-        } catch (error) {
-            useBackend = false;
-            // Fall through to local response
-            response = generateAIResponse(message, loans);
-        }
-    } else {
-        // Standalone mode
+    try {
+        const apiResponse = await apiRequest('/advisor/chat', {
+            method: 'POST',
+            body: JSON.stringify({
+                message,
+                history: chatHistory.slice(-10)
+            })
+        });
+        response = apiResponse.response;
+    } catch (error) {
+        useBackend = false;
+        // Fall through to local response
         response = generateAIResponse(message, loans);
     }
     
