@@ -117,6 +117,7 @@ def logout():
 def get_user_from_token():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     session = sessions_db.get(token)
+    print(f"Auth token: {token}, Session: {session}")
     if not session and token != "demo_token":
         return None
     return session['username'] if session else "demo_user"
