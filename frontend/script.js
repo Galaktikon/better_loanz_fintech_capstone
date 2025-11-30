@@ -609,7 +609,8 @@ async function sendMessage() {
             },
             body: JSON.stringify({
                 message,
-                history: chatHistory.slice(-10)
+                history: chatHistory.slice(-10),
+                loans: getLocalLoans()
             })
         });
         response = apiResponse.response;

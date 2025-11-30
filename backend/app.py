@@ -304,9 +304,9 @@ def parse_plaid_loans(data):
     return loans
 
 # ============= AI Helper ==============
-def build_user_context(username):
+def build_user_context(username, local_loans=None):
     print(loans_db)
-    user_loans = loans_db.get(username, [])
+    user_loans = loans_db.get(username, []) if local_loans is None else local_loans
 
     if not user_loans:
         return "The user currently has no loans connected."
@@ -383,7 +383,7 @@ def advisor_chat():
         return jsonify({"error": "Message required"}), 400
 
     # ---- Build user financial context ----
-    user_context = build_user_context(username)
+    user_context = build_user_context(username, local_loans=data.get("loans"))
 
     # ---- Compose messages for OpenAI ----
     messages = [
