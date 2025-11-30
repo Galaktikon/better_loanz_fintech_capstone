@@ -305,7 +305,7 @@ def parse_plaid_loans(data):
 
 # ============= AI Helper ==============
 def build_user_context(username):
-    print(loans_db.)
+    print(loans_db)
     user_loans = loans_db.get(username, [])
 
     if not user_loans:
