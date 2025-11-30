@@ -80,6 +80,7 @@ function getLocalLoans() {
     const user = localStorage.getItem(STORAGE_CURRENT_USER);
     if (!user) return [];
     const stored = localStorage.getItem(`${STORAGE_LOANS}_${user}`);
+    console.log("Loaded local loans:", stored);
     return stored ? JSON.parse(stored) : getDefaultLoans();
 }
 
