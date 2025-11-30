@@ -384,6 +384,7 @@ def advisor_chat():
 
     # ---- Build user financial context ----
     user_context = build_user_context(username, local_loans=data.get("loans"))
+    print(f"User context for {username}:\n{user_context}")
 
     # ---- Compose messages for OpenAI ----
     messages = [
