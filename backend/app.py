@@ -426,6 +426,7 @@ def advisor_chat():
         return jsonify({"response": ai_response}), 200
 
     except Exception as e:
+        print(f"OpenAI error: {e}")
         return jsonify({"error": str(e)}), 500
 
 # ====== BASIC ENDPOINTS ======
