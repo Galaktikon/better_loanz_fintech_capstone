@@ -422,7 +422,7 @@ def advisor_chat():
             temperature=0.6
         )
 
-        ai_response = completion.choices[0].message["content"]
+        ai_response = completion.choices[0].message.content
         return jsonify({"response": ai_response}), 200
 
     except Exception as e:
